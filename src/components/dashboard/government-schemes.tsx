@@ -1,4 +1,3 @@
-
 import { FileText, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +39,10 @@ export function GovernmentSchemes() {
       deadline: "15 July 2023",
     },
   ];
+
+  const handleApplyClick = () => {
+    window.open("https://www.idfcfirstbank.com/pm-care-fund", "_blank");
+  };
 
   return (
     <Card>
@@ -84,7 +87,7 @@ export function GovernmentSchemes() {
                 <div className="text-xs text-muted-foreground">
                   Deadline: {scheme.deadline}
                 </div>
-                <Button size="sm">Apply Now</Button>
+                <Button size="sm" onClick={handleApplyClick}>Apply Now</Button>
               </div>
             </div>
           ))}
