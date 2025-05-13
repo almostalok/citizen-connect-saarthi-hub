@@ -36,6 +36,14 @@ export function SidebarNav() {
     setCollapsed(isMobile);
   }, [isMobile]);
 
+  // Set initial active item based on URL hash
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash) {
+      setActiveItem(hash);
+    }
+  }, []);
+
   const items: NavItem[] = [
     {
       title: "Dashboard",
@@ -89,11 +97,8 @@ export function SidebarNav() {
   const handleNavClick = (item: string, href: string) => {
     setActiveItem(item.toLowerCase());
     
-    // Scroll to the section
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+    // Update the URL hash
+    window.location.hash = href.replace("#", "");
     
     toast({
       title: `Navigated to ${item}`,
