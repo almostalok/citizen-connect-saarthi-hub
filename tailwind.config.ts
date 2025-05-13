@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Government theme colors
+				gov: {
+					blue: '#0052CC',
+					'blue-light': '#4C9AFF',
+					'blue-dark': '#00368C',
+					orange: '#FF5630',
+					'orange-light': '#FF8F73',
+					'orange-dark': '#DE350B',
+					neutral: '#42526E',
+					'neutral-light': '#C1C7D0',
+					'neutral-dark': '#172B4D',
 				}
 			},
 			borderRadius: {
@@ -84,11 +97,42 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'pulse-urgent': {
+					'0%, 100%': {
+						opacity: 1
+					},
+					'50%': {
+						opacity: 0.5
+					}
+				},
+				ripple: {
+					'0%': {
+						transform: 'scale(0)',
+						opacity: 1
+					},
+					'100%': {
+						transform: 'scale(4)',
+						opacity: 0
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'pulse-urgent': 'pulse-urgent 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'ripple': 'ripple 1s linear infinite'
 			}
 		}
 	},
