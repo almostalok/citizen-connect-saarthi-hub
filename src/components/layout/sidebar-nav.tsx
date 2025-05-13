@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 type NavItem = {
   title: string;
@@ -29,6 +30,7 @@ export function SidebarNav() {
   const [activeItem, setActiveItem] = useState("dashboard");
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
+  const { toast } = useToast();
 
   useEffect(() => {
     setCollapsed(isMobile);
@@ -84,8 +86,19 @@ export function SidebarNav() {
     },
   ];
 
-  const handleNavClick = (item: string) => {
+  const handleNavClick = (item: string, href: string) => {
     setActiveItem(item.toLowerCase());
+    
+    // Scroll to the section
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    toast({
+      title: `Navigated to ${item}`,
+      description: `You are now viewing the ${item} section`,
+    });
   };
 
   return (
@@ -124,7 +137,7 @@ export function SidebarNav() {
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
-              onClick={() => handleNavClick(item.title)}
+              onClick={() => handleNavClick(item.title, item.href)}
             >
               <div className="relative">
                 <item.icon className="h-5 w-5" />
@@ -141,6 +154,7 @@ export function SidebarNav() {
         <Link
           to="#settings"
           className="flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          onClick={() => handleNavClick("Settings", "#settings")}
         >
           <Settings className="h-5 w-5" />
           {!collapsed && <span className="ml-3">Settings</span>}
