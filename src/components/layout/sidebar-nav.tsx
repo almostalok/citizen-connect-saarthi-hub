@@ -41,6 +41,7 @@ export function SidebarNav() {
     const updateActiveItemFromHash = () => {
       const hash = window.location.hash.replace("#", "");
       setActiveItem(hash || "dashboard"); // Default to dashboard if no hash
+      console.log("Sidebar: active item set to", hash || "dashboard");
     };
     
     // Initial setup
@@ -108,6 +109,8 @@ export function SidebarNav() {
     const section = href.replace("#", "");
     setActiveItem(section);
     
+    console.log("Sidebar: clicked on", item, "with section", section);
+    
     // Update the URL hash
     window.location.hash = section;
     
@@ -144,11 +147,10 @@ export function SidebarNav() {
       <div className="flex-1 py-4 overflow-auto">
         <nav className="space-y-1 px-2">
           {items.map((item) => (
-            <Link
+            <button
               key={item.title}
-              to={item.href}
               className={cn(
-                "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
+                "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors w-full text-left",
                 activeItem === item.href.replace('#', '')
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
@@ -162,15 +164,14 @@ export function SidebarNav() {
                 )}
               </div>
               {!collapsed && <span className="ml-3">{item.title}</span>}
-            </Link>
+            </button>
           ))}
         </nav>
       </div>
       <div className="p-4 border-t border-sidebar-border">
-        <Link
-          to="#settings"
+        <button
           className={cn(
-            "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
+            "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors w-full text-left",
             activeItem === "settings"
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
@@ -179,7 +180,7 @@ export function SidebarNav() {
         >
           <Settings className="h-5 w-5" />
           {!collapsed && <span className="ml-3">Settings</span>}
-        </Link>
+        </button>
       </div>
     </div>
   );

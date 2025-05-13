@@ -1,3 +1,4 @@
+
 import { Layout } from "@/components/layout/layout";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { OneTapComplaint } from "@/components/dashboard/one-tap-complaint";
@@ -38,6 +39,8 @@ const Index = () => {
       if (!isMounted.current) return;
       
       const hash = window.location.hash.replace('#', '');
+      console.log("Hash changed to:", hash);
+      
       if (hash) {
         setActiveSection(hash);
         // Reset to overview tab when changing sections
@@ -63,8 +66,15 @@ const Index = () => {
     };
   }, []);
 
+  // If activeSection changes, log it to help with debugging
+  useEffect(() => {
+    console.log("Active section changed to:", activeSection);
+  }, [activeSection]);
+
   // Render component based on active section
   const renderActiveComponent = () => {
+    console.log("Rendering active component for section:", activeSection);
+    
     switch (activeSection) {
       case "dashboard":
         return (
@@ -205,6 +215,7 @@ const Index = () => {
           </div>
         );
       default:
+        console.log("Section not found:", activeSection);
         return (
           <div className="text-center py-10">
             <h2 className="text-2xl font-bold">Section not found</h2>
