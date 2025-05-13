@@ -27,7 +27,7 @@ type NavItem = {
 };
 
 export function SidebarNav() {
-  const [activeItem, setActiveItem] = useState("dashboard");
+  const [activeItem, setActiveItem] = useState("");
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
   const { toast } = useToast();
@@ -38,10 +38,20 @@ export function SidebarNav() {
 
   // Set initial active item based on URL hash
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
-    if (hash) {
-      setActiveItem(hash);
-    }
+    const updateActiveItemFromHash = () => {
+      const hash = window.location.hash.replace("#", "");
+      setActiveItem(hash || "dashboard"); // Default to dashboard if no hash
+    };
+    
+    // Initial setup
+    updateActiveItemFromHash();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', updateActiveItemFromHash);
+    
+    return () => {
+      window.removeEventListener('hashchange', updateActiveItemFromHash);
+    };
   }, []);
 
   const items: NavItem[] = [
@@ -95,10 +105,11 @@ export function SidebarNav() {
   ];
 
   const handleNavClick = (item: string, href: string) => {
-    setActiveItem(item.toLowerCase());
+    const section = href.replace("#", "");
+    setActiveItem(section);
     
     // Update the URL hash
-    window.location.hash = href.replace("#", "");
+    window.location.hash = section;
     
     toast({
       title: `Navigated to ${item}`,
@@ -138,7 +149,7 @@ export function SidebarNav() {
               to={item.href}
               className={cn(
                 "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
-                activeItem === item.title.toLowerCase()
+                activeItem === item.href.replace('#', '')
                   ? "bg-sidebar-accent text-sidebar-accent-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
@@ -158,7 +169,12 @@ export function SidebarNav() {
       <div className="p-4 border-t border-sidebar-border">
         <Link
           to="#settings"
-          className="flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          className={cn(
+            "flex items-center py-2 px-3 rounded-md text-sm font-medium transition-colors",
+            activeItem === "settings"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          )}
           onClick={() => handleNavClick("Settings", "#settings")}
         >
           <Settings className="h-5 w-5" />

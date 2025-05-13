@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/layout/layout";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { OneTapComplaint } from "@/components/dashboard/one-tap-complaint";
@@ -13,13 +12,15 @@ import { NoticeBoard } from "@/components/dashboard/notice-board";
 import { AlertTriangle, BarChart3, CheckCircle, Clock, Phone, Users, Heart, FileText, Star, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [activeSection, setActiveSection] = useState("dashboard");
-
+  // Track if component is mounted to prevent state updates after unmounting
+  const isMounted = useRef(true);
+  
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     toast({
@@ -30,10 +31,22 @@ const Index = () => {
 
   // Update active section based on URL hash
   useEffect(() => {
+    // Set up the ref
+    isMounted.current = true;
+    
     const handleHashChange = () => {
+      if (!isMounted.current) return;
+      
       const hash = window.location.hash.replace('#', '');
       if (hash) {
         setActiveSection(hash);
+        // Reset to overview tab when changing sections
+        if (hash === "dashboard") {
+          setActiveTab("overview");
+        }
+      } else {
+        // Default to dashboard if no hash
+        setActiveSection("dashboard");
       }
     };
 
@@ -42,7 +55,12 @@ const Index = () => {
 
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    
+    // Cleanup
+    return () => {
+      isMounted.current = false;
+      window.removeEventListener('hashchange', handleHashChange);
+    };
   }, []);
 
   // Render component based on active section
@@ -51,7 +69,7 @@ const Index = () => {
       case "dashboard":
         return (
           <>
-            <Tabs defaultValue="overview" className="w-full" onValueChange={handleTabChange}>
+            <Tabs defaultValue={activeTab} value={activeTab} className="w-full" onValueChange={handleTabChange}>
               <TabsList className="w-full justify-start mb-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="sos">Emergency SOS</TabsTrigger>
