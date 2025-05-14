@@ -1,7 +1,10 @@
 # Welcome to "SAARTHI"
 
+deployment link:-https://citizen-connect-saarthi-hub-fuzr.vercel.app/
+ppt-https://www.canva.com/design/DAGnQU2Lits/yaDEIGqd3kqvNsMBHvdzBg/view?utm_content=DAGnQU2Lits&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h10441ad0be
+
 ## Project info
-Saarthi is a gover
+Saarthi is a government services and feedback platform.
 
 
 ## How can I edit this code?
@@ -57,4 +60,7 @@ This project is built with:
 
 ## How can I deploy this project?
 use vercel
+
+##Deployment link
+https://citizen-connect-saarthi-hub-fuzr.vercel.app/
 
