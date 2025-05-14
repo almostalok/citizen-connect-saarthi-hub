@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -12,12 +11,14 @@ import {
   Settings,
   Star,
   ThumbsUp,
-  Bell
+  Bell,
+  Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 type NavItem = {
   title: string;
@@ -30,6 +31,7 @@ export function SidebarNav() {
   const [activeItem, setActiveItem] = useState("");
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
+  const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -114,35 +116,33 @@ export function SidebarNav() {
     // Update the URL hash
     window.location.hash = section;
     
+    // Close mobile menu on navigation
+    if (isMobile) {
+      setOpen(false);
+    }
+    
     toast({
       title: `Navigated to ${item}`,
       description: `You are now viewing the ${item} section`,
     });
   };
 
-  return (
-    <div
-      className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col",
-        collapsed ? "w-16" : "w-64"
-      )}
-    >
+  const NavContent = () => (
+    <>
       <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
         {!collapsed && (
           <span className="text-lg font-bold text-gov-blue">SAARTHI</span>
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="ml-auto"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? (
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-auto"
+            onClick={() => setCollapsed(!collapsed)}
+          >
             <MapPin className="h-4 w-4" />
-          ) : (
-            <MapPin className="h-4 w-4" />
-          )}
-        </Button>
+          </Button>
+        )}
       </div>
       <div className="flex-1 py-4 overflow-auto">
         <nav className="space-y-1 px-2">
@@ -182,6 +182,38 @@ export function SidebarNav() {
           {!collapsed && <span className="ml-3">Settings</span>}
         </button>
       </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 left-4 z-50"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-64 bg-sidebar">
+          <div className="h-full flex flex-col">
+            <NavContent />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      <NavContent />
     </div>
   );
 }

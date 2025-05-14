@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Camera, Mic, Send, MapPin, FileText, AlertCircle, Clock, User, Building2, MapPin as MapPinIcon, X } from "lucide-react";
+import { Camera, Mic, Send, MapPin, FileText, AlertCircle, Clock, User, Building2, MapPin as MapPinIcon, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { generateComplaintDetails } from "@/lib/ai-detection";
 
 // Google Maps type definitions
 declare global {
@@ -45,6 +46,23 @@ interface ComplaintStatus {
   status: 'pending' | 'in-progress' | 'resolved';
 }
 
+interface ComplaintDetails {
+  category: string;
+  department: string;
+  departmentDetails: {
+    head: string;
+    contact: string;
+    email: string;
+    workingHours: string;
+    responseTime: string;
+  };
+  deadline: number;
+  priority: string;
+  description: string;
+  confidence: number;
+  detectedObjects: string[];
+}
+
 export function OneTapComplaint() {
   const [isRecording, setIsRecording] = useState(false);
   const [complaintText, setComplaintText] = useState("");
@@ -63,6 +81,11 @@ export function OneTapComplaint() {
     contactNumber: "",
   });
   const { toast } = useToast();
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [complaintDetails, setComplaintDetails] = useState<ComplaintDetails | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Load Google Maps script
@@ -162,23 +185,52 @@ export function OneTapComplaint() {
     setShowStatusDialog(true);
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newPhotos: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.type.startsWith('image/')) {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            newPhotos.push(reader.result as string);
-            if (newPhotos.length === files.length) {
-              setSelectedPhotos(prev => [...prev, ...newPhotos]);
-            }
-          };
-          reader.readAsDataURL(file);
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPEG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        if (result) {
+          setSelectedPhotos(prev => [...prev, result]);
         }
-      }
+      };
+      reader.readAsDataURL(file);
+
+      // Analyze image
+      setIsAnalyzing(true);
+      const details = await generateComplaintDetails(file);
+      setComplaintDetails(details);
+      setShowDetails(true);
+      
+      toast({
+        title: "AI Analysis Complete",
+        description: `Detected as ${details.category} issue with ${Math.round(details.confidence * 100)}% confidence`,
+      });
+    } catch (error) {
+      console.error('Error analyzing image:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Could not analyze the image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+      // Reset file input
+      event.target.value = '';
     }
   };
 
@@ -230,6 +282,29 @@ export function OneTapComplaint() {
     setShowBriefComplaint(false);
   };
 
+  const handleSubmit = () => {
+    if (!complaintText && !selectedImage) {
+      toast({
+        title: "Error",
+        description: "Please enter a complaint or upload an image",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Here you would typically send the complaint to your backend
+    toast({
+      title: "Complaint Submitted",
+      description: "Your complaint has been registered successfully",
+    });
+
+    // Reset form
+    setComplaintText("");
+    setSelectedImage(null);
+    setComplaintDetails(null);
+    setShowDetails(false);
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -248,53 +323,57 @@ export function OneTapComplaint() {
               className="w-full"
             />
             
-            <div className="flex justify-center space-x-4">
-              <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="icon" className="rounded-full">
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Upload Photos</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedPhotos.map((photo, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={photo}
-                            alt={`Uploaded photo ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg"
-                          />
-                          <button
-                            onClick={() => removePhoto(index)}
-                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-center">
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={handlePhotoUpload}
-                        />
-                        <Button variant="outline" type="button">
-                          <Camera className="h-4 w-4 mr-2" />
-                          Add Photos
-                        </Button>
-                      </label>
+            <div className="flex flex-col items-center space-y-4">
+              <div className="w-full max-w-md">
+                <label className="w-full">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handlePhotoUpload}
+                    id="photo-upload"
+                  />
+                  <div className="w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary cursor-pointer transition-colors">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Camera className="h-8 w-8 text-gray-400" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium">Click to upload photo</p>
+                        <p className="text-xs text-gray-500">or drag and drop</p>
+                      </div>
                     </div>
                   </div>
-                </DialogContent>
-              </Dialog>
+                </label>
+              </div>
+
+              {isAnalyzing && (
+                <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Analyzing image...</span>
+                </div>
+              )}
+
+              {selectedPhotos.length > 0 && (
+                <div className="grid grid-cols-2 gap-4 w-full">
+                  {selectedPhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={photo}
+                        alt={`Uploaded photo ${index + 1}`}
+                        className="w-full h-48 object-cover rounded-lg"
+                      />
+                      <button
+                        onClick={() => removePhoto(index)}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-center">
               <Button
                 variant="outline"
                 size="icon"
@@ -310,26 +389,6 @@ export function OneTapComplaint() {
                 )}
               </Button>
             </div>
-
-            {selectedPhotos.length > 0 && (
-              <div className="flex space-x-2 overflow-x-auto py-2">
-                {selectedPhotos.map((photo, index) => (
-                  <div key={index} className="relative">
-                    <img
-                      src={photo}
-                      alt={`Preview ${index + 1}`}
-                      className="h-16 w-16 object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => removePhoto(index)}
-                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
@@ -360,7 +419,7 @@ export function OneTapComplaint() {
               </div>
             </DialogContent>
           </Dialog>
-          <Button onClick={handleSubmitComplaint}>
+          <Button onClick={handleSubmit}>
             <Send className="h-4 w-4 mr-2" />
             Submit
           </Button>
@@ -478,6 +537,107 @@ export function OneTapComplaint() {
                 Submit Complaint
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Analysis Details Dialog */}
+      <Dialog open={showDetails} onOpenChange={setShowDetails}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>AI Analysis Results</DialogTitle>
+            <DialogDescription>
+              Based on the image analysis, here are the details of your complaint:
+            </DialogDescription>
+          </DialogHeader>
+          {complaintDetails && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Category</h4>
+                  <p className="text-sm text-muted-foreground">{complaintDetails.category}</p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Priority</h4>
+                  <p className="text-sm text-muted-foreground capitalize">{complaintDetails.priority}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Department Information</h4>
+                <div className="bg-muted p-4 rounded-lg space-y-2">
+                  <p className="text-sm">
+                    <span className="font-medium">Department:</span> {complaintDetails.department}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Head:</span> {complaintDetails.departmentDetails.head}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Contact:</span> {complaintDetails.departmentDetails.contact}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Email:</span> {complaintDetails.departmentDetails.email}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Working Hours:</span> {complaintDetails.departmentDetails.workingHours}
+                  </p>
+                  <p className="text-sm">
+                    <span className="font-medium">Response Time:</span> {complaintDetails.departmentDetails.responseTime}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Expected Resolution</h4>
+                <p className="text-sm text-muted-foreground">
+                  This issue will be resolved within {complaintDetails.deadline} days
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Description</h4>
+                <p className="text-sm text-muted-foreground">{complaintDetails.description}</p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Detected Objects</h4>
+                <div className="flex flex-wrap gap-2">
+                  {complaintDetails.detectedObjects.map((obj, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                    >
+                      {obj}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Confidence Score</h4>
+                <div className="flex items-center space-x-2">
+                  <Progress value={complaintDetails.confidence * 100} className="h-2" />
+                  <span className="text-sm text-muted-foreground">
+                    {Math.round(complaintDetails.confidence * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Map Dialog */}
+      <Dialog open={showMap} onOpenChange={setShowMap}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Current Location</DialogTitle>
+            <DialogDescription>
+              Your complaint will be registered at this location
+            </DialogDescription>
+          </DialogHeader>
+          <div className="h-[300px] bg-muted rounded-lg flex items-center justify-center">
+            <p className="text-muted-foreground">Sector 15, Greater Noida</p>
           </div>
         </DialogContent>
       </Dialog>
