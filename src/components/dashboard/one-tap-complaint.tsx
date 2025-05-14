@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Camera, Mic, Send, MapPin, FileText, AlertCircle, Clock, User, Building2, MapPin as MapPinIcon } from "lucide-react";
+import { Camera, Mic, Send, MapPin, FileText, AlertCircle, Clock, User, Building2, MapPin as MapPinIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -51,6 +51,8 @@ export function OneTapComplaint() {
   const [showMap, setShowMap] = useState(false);
   const [showBriefComplaint, setShowBriefComplaint] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showPhotoDialog, setShowPhotoDialog] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [currentComplaint, setCurrentComplaint] = useState<ComplaintStatus | null>(null);
   const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // 24 hours in seconds
   const [briefComplaint, setBriefComplaint] = useState({
@@ -160,6 +162,30 @@ export function OneTapComplaint() {
     setShowStatusDialog(true);
   };
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newPhotos: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            newPhotos.push(reader.result as string);
+            if (newPhotos.length === files.length) {
+              setSelectedPhotos(prev => [...prev, ...newPhotos]);
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setSelectedPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmitComplaint = () => {
     if (!complaintText.trim()) {
       toast({
@@ -176,6 +202,7 @@ export function OneTapComplaint() {
     });
     
     setComplaintText("");
+    setSelectedPhotos([]);
   };
 
   const handleSubmitBriefComplaint = () => {
@@ -222,9 +249,52 @@ export function OneTapComplaint() {
             />
             
             <div className="flex justify-center space-x-4">
-              <Button variant="outline" size="icon" className="rounded-full">
-                <Camera className="h-4 w-4" />
-              </Button>
+              <Dialog open={showPhotoDialog} onOpenChange={setShowPhotoDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full">
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Upload Photos</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedPhotos.map((photo, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={photo}
+                            alt={`Uploaded photo ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg"
+                          />
+                          <button
+                            onClick={() => removePhoto(index)}
+                            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-center">
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handlePhotoUpload}
+                        />
+                        <Button variant="outline" type="button">
+                          <Camera className="h-4 w-4 mr-2" />
+                          Add Photos
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Button
                 variant="outline"
                 size="icon"
@@ -240,6 +310,26 @@ export function OneTapComplaint() {
                 )}
               </Button>
             </div>
+
+            {selectedPhotos.length > 0 && (
+              <div className="flex space-x-2 overflow-x-auto py-2">
+                {selectedPhotos.map((photo, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={photo}
+                      alt={`Preview ${index + 1}`}
+                      className="h-16 w-16 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => removePhoto(index)}
+                      className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">

@@ -1,4 +1,3 @@
-
 import { Layout } from "@/components/layout/layout";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { OneTapComplaint } from "@/components/dashboard/one-tap-complaint";
@@ -10,6 +9,8 @@ import { GovernmentSchemes } from "@/components/dashboard/government-schemes";
 import { BudgetTransparency } from "@/components/dashboard/budget-transparency";
 import { KarmaPoints } from "@/components/dashboard/karma-points";
 import { NoticeBoard } from "@/components/dashboard/notice-board";
+import { Settings } from "@/components/dashboard/settings";
+import { CityInfo } from "@/components/dashboard/city-info";
 import { AlertTriangle, BarChart3, CheckCircle, Clock, Phone, Users, Heart, FileText, Star, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +20,7 @@ const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [activeSection, setActiveSection] = useState("dashboard");
-  // Track if component is mounted to prevent state updates after unmounting
+  const [isLoading, setIsLoading] = useState(true);
   const isMounted = useRef(true);
   
   const handleTabChange = (value: string) => {
@@ -30,7 +31,6 @@ const Index = () => {
     });
   };
 
-  // Update active section based on URL hash
   useEffect(() => {
     // Set up the ref
     isMounted.current = true;
@@ -59,22 +59,34 @@ const Index = () => {
     // Listen for hash changes
     window.addEventListener('hashchange', handleHashChange);
     
+    // Simulate initial loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
     // Cleanup
     return () => {
       isMounted.current = false;
       window.removeEventListener('hashchange', handleHashChange);
+      clearTimeout(timer);
     };
   }, []);
 
-  // If activeSection changes, log it to help with debugging
-  useEffect(() => {
-    console.log("Active section changed to:", activeSection);
-  }, [activeSection]);
-
   // Render component based on active section
   const renderActiveComponent = () => {
-    console.log("Rendering active component for section:", activeSection);
-    
+    if (isLoading) {
+      return (
+        <div className="space-y-6">
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case "dashboard":
         return (
@@ -85,31 +97,34 @@ const Index = () => {
                 <TabsTrigger value="sos">Emergency SOS</TabsTrigger>
               </TabsList>
               <TabsContent value="overview">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <StatsCard
-                    title="Active Complaints"
-                    value="28"
-                    icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
-                    description="5 new since last login"
-                  />
-                  <StatsCard
-                    title="Resolved Issues"
-                    value="143"
-                    icon={<CheckCircle className="h-4 w-4 text-green-500" />}
-                    description="92% resolution rate"
-                  />
-                  <StatsCard
-                    title="Pending Requests"
-                    value="17"
-                    icon={<Clock className="h-4 w-4 text-yellow-500" />}
-                    description="Avg. resolution: 5 days"
-                  />
-                  <StatsCard
-                    title="Community Support"
-                    value="2,584"
-                    icon={<Users className="h-4 w-4 text-blue-500" />}
-                    description="Active citizens"
-                  />
+                <div className="space-y-6">
+                  <CityInfo />
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatsCard
+                      title="Active Complaints"
+                      value="28"
+                      icon={<AlertTriangle className="h-4 w-4 text-red-500" />}
+                      description="5 new since last login"
+                    />
+                    <StatsCard
+                      title="Resolved Issues"
+                      value="143"
+                      icon={<CheckCircle className="h-4 w-4 text-green-500" />}
+                      description="92% resolution rate"
+                    />
+                    <StatsCard
+                      title="Pending Requests"
+                      value="17"
+                      icon={<Clock className="h-4 w-4 text-yellow-500" />}
+                      description="Avg. resolution: 5 days"
+                    />
+                    <StatsCard
+                      title="Community Support"
+                      value="2,584"
+                      icon={<Users className="h-4 w-4 text-blue-500" />}
+                      description="Active citizens"
+                    />
+                  </div>
                 </div>
               </TabsContent>
               <TabsContent value="sos" className="animate-fade-in">
@@ -209,13 +224,10 @@ const Index = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Account Settings</h2>
-            <div className="border rounded-lg p-6">
-              <p className="text-muted-foreground">Manage your profile, preferences, and notification settings here.</p>
-            </div>
+            <Settings />
           </div>
         );
       default:
-        console.log("Section not found:", activeSection);
         return (
           <div className="text-center py-10">
             <h2 className="text-2xl font-bold">Section not found</h2>
