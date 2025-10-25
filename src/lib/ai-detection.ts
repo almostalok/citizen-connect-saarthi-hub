@@ -1,6 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 
+type MobileNetPrediction = {
+  className: string;
+  probability: number;
+};
+
 // Define complaint categories and their corresponding keywords
 const COMPLAINT_CATEGORIES = {
   INFRASTRUCTURE: {
@@ -161,7 +166,7 @@ export async function analyzeImage(imageElement: HTMLImageElement) {
 }
 
 // Determine complaint category based on detected objects
-export function determineComplaintCategory(predictions: mobilenet.MobileNetPrediction[]) {
+export function determineComplaintCategory(predictions: MobileNetPrediction[]) {
   const detectedObjects = predictions.map(p => p.className.toLowerCase());
   const confidenceThreshold = 0.6; // Minimum confidence threshold
   

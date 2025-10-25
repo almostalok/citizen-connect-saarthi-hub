@@ -10,7 +10,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Settings, LogOut, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserProfile {
   name: string;
@@ -21,20 +23,45 @@ interface UserProfile {
 
 export function ProfileDropdown() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const router = useRouter();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const savedProfile = localStorage.getItem("userProfile");
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
-    }
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (data) {
+          setProfile({
+            name: data.full_name || user.email?.split("@")[0] || "User",
+            email: user.email || "",
+            phone: data.phone || "",
+          });
+        }
+      }
+    };
+    
+    fetchProfile();
   }, []);
 
-  const handleLogout = () => {
-    // Clear user data
-    localStorage.removeItem("userProfile");
-    // Redirect to login page
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out successfully",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Error logging out",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -64,11 +91,11 @@ export function ProfileDropdown() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+        <DropdownMenuItem onClick={() => navigate("/dashboard")}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+        <DropdownMenuItem onClick={() => navigate("/dashboard")}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
